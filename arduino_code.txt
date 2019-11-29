@@ -1,0 +1,62 @@
+#include <LCD5110_Graph.h>
+#include <Boards.h>
+#include <Firmata.h>
+#include <FirmataConstants.h>
+#include <FirmataDefines.h>
+#include <FirmataMarshaller.h>
+#include <FirmataParser.h>
+
+const int AOUTpin=1;//the AOUT pin of the alcohol sensor goes into analog pin A0 of the arduino
+const int ledPin=13;//the anode of the LED connects to digital pin D13 of the arduino
+const int peizoPin=4;
+int limit;
+int value;
+float sonuc;
+LCD5110 myGLCD(8,9,10,11,12);
+
+extern uint8_t SmallFont[];
+extern uint8_t BigNumbers[];
+
+void setup() 
+{
+myGLCD.InitLCD();
+Serial.begin(9600);//sets the baud rate
+pinMode(AOUTpin, INPUT);//sets the pin as an input to the arduino
+pinMode(ledPin, OUTPUT);//sets the pin as an output of the arduino
+}
+
+void loop()
+{
+value= analogRead(AOUTpin);//reads the analaog value from the alcohol sensor's AOUT pin
+myGLCD.update();
+float adcvalue=0;
+for(int i=0;i<10;i++)
+{
+adcvalue+=value;
+delay(10);
+}
+float v=(adcvalue/10)*(5.0/1024.0);
+sonuc=0.67*v;
+myGLCD.setFont(SmallFont);        
+myGLCD.print("your Alchol ",CENTER,10); 
+myGLCD.print("mg/L",RIGHT,40); 
+myGLCD.setFont(BigNumbers);
+myGLCD.printNumF(sonuc,2,5,20);
+delay(2000);
+myGLCD.update();
+Serial.print("Alcohol value: ");
+Serial.println(value);//prints the alcohol value
+delay(100);
+if (sonuc>0.8)
+{
+tone(peizoPin,1000,500);
+digitalWrite(ledPin,HIGH);//if limit has been reached, LED turns on as status indicator
+Serial.print('1');
+}
+else
+{
+digitalWrite(ledPin,LOW);//if threshold not reached, LED remains off
+Serial.print('0');
+}
+}
+//credit to circuitdigest,arduino.cc
